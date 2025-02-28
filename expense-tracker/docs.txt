@@ -1,0 +1,35 @@
+expense-tracker add --description "lunch" --amount 20
+
+i guess we're gonna use command line arguments
+
+manage errors with return codes
+use csv file to store the data
+oop programing
+
+use functions to modularize the code and make it easier to test and maintain
+
+REQUIREMENTS
+
+- users can add an expense with a description and amount
+- users can update an expense
+- users can delete an expense
+- users can view all expenses
+- users can view a summary of all expenses
+- users can view a summary of expenses for a specific month (of current year)
+
+ADITIONAL FEATURES
+
+- add expenses categories and allow users to filter expenses by category
+- allow users to set a budget for each month and show a warning when the user exceeds the budget
+- allow users to export expenses to a CSV file
+
+
+classes
+
+- expense
+    - id
+    - dateonly
+    - description
+    - amount
+
+
