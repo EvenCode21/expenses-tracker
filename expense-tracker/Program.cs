@@ -1,26 +1,34 @@
 ﻿using System;
+using System.IO;
+using System.Text;
 
 namespace expense_tracker;
 
 class Program
 {
+   const string FILE_NAME = "expenses.csv";
+   static string filePath = string.Empty;
+   static Dictionary<int, Expense> expenses = new Dictionary<int, Expense>();
    static int Main(string[] args)
    {
-      // handling no input 
-      if (args.Length == 0)
+      // handling no input or too many inputs 
+      if (args.Length == 0 || args.Length > 5)
       {
          Console.WriteLine("Usage: ");
          return 1;
       }
 
+      CreateEmptyFile(FILE_NAME);
+
+      LoadExpensesFromFile();
 
       // handling input errors and calling the proper meth
       switch (args[0])
       {
          case "add":
-            if (args.Length >= 5)
+            if (args.Length == 5)
             {
-
+               AddExpense(args);
             }
             else
             {
@@ -109,8 +117,92 @@ class Program
       // read the file and print all the expenses with their data
    }
 
-   private static void AddExpense(string description, int amount)
+   private static void AddExpense(string[] args)
    {
-      // create an expense obj and add the description, amount, id and date
+      if (args[1] == "--description")
+      {
+         if (args[3] == "--amount")
+         {
+            if (decimal.TryParse(args[4], out decimal result) && result > 0)
+            {
+               var expense = new Expense()
+               {
+                  id = expenses.Count + 1,
+                  date = DateOnly.FromDateTime(DateTime.Now),
+                  description = args[2],
+                  amount = result
+               };
+
+               expenses.Add(expenses.Count + 1, expense);
+
+               SaveExpensesToFile(expense);
+            }
+            else
+            {
+               Console.WriteLine("\"{0}\" is not a valid amount", args[4]);
+               return;
+            }
+         }
+         else
+         {
+            Console.WriteLine("Invalid argument \"{0}\"", args[3]);
+            return;
+         }
+      }
+      else
+      {
+         Console.WriteLine("Invalid argument \"{0}\"", args[1]);
+         return;
+      }
+
    }
+
+   private static void LoadExpensesFromFile()
+   {
+      // initial method to load the expenses stored in the csv file
+      // if there isn't any file, call CreateEmptyFile()
+      // if there's one, read it and deserealize the data
+
+   }
+
+   private static void SaveExpensesToFile(Expense expense)
+   {
+      // convert the data into bytes array
+      // append to the file
+      string data = $"{expense.id}, {expense.date.ToString()}, {expense.description}, {expense.amount.ToString()}\n";
+      byte[] bytes = Encoding.UTF8.GetBytes(data);
+      try
+      {
+         File.AppendAllBytes(filePath, bytes);
+      }
+      catch
+      {
+         Console.WriteLine("Cannot write in the file");
+         return;
+      }
+   }
+
+   private static void CreateEmptyFile(string filename)
+   {
+      string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/expenses";
+
+      if (!Directory.Exists(folderPath))
+      {
+         Directory.CreateDirectory(folderPath);
+      }
+
+      filePath = Path.Combine(folderPath, filename);
+
+      if (File.Exists(filePath))
+      {
+         Console.WriteLine("The file already exits");
+         return;
+      }
+      else
+      {
+         byte[] bytes = Encoding.UTF8.GetBytes("Id, Date, Description, Amount\n");
+         File.WriteAllBytes(filePath, bytes);
+      }
+   }
+
 }
