@@ -97,24 +97,97 @@ class Program
       return 0;
    }
 
+   private static void OverwriteFile(string filename)
+   {
+      string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "/expenses";
+
+      if (!Directory.Exists(folderPath))
+      {
+         Directory.CreateDirectory(folderPath);
+      }
+
+      filePath = Path.Combine(folderPath, filename);
+
+
+      byte[] bytes = Encoding.UTF8.GetBytes("Id, Date, Description, Amount\n");
+      File.WriteAllBytes(filePath, bytes);
+
+      foreach (var exp in expenses)
+      {
+         SaveExpensesToFile(exp.Value);
+      }
+   }
+
    private static void DeleteExpense(int id)
    {
       // delete an expense by id
+      if (expenses.Remove(id))
+      {
+         // rewrite the expenses in the file
+         OverwriteFile(FILE_NAME);
+         Console.WriteLine("Expense deleted successfully");
+      }
+      else
+      {
+         Console.WriteLine("Expense not found at id: \"{0}\"", id);
+      }
+
    }
 
    private static void SummaryMonthExpenses(int month)
    {
       // summary the expenses for a specific month
+      string monthName = String.Empty;
+      if (month < 1 || month > 12)
+      {
+         Console.WriteLine("Invalid Month");
+         return;
+      }
+      decimal total = 0;
+      foreach (var exp in expenses)
+      {
+         var amount = exp.Value.amount;
+         if (exp.Value.date.Month == month)
+         {
+            total += amount;
+            monthName = exp.Value.date.ToString("MMMM");
+         }
+      }
+
+      Console.WriteLine("Total expenses for {1}: ${0}", total, monthName);
    }
 
    private static void SummaryExpenses()
    {
       // Summary all the expenses of the current year
+      decimal total = 0;
+      foreach (var exp in expenses)
+      {
+         var amount = exp.Value.amount;
+         total += amount;
+      }
+
+      Console.WriteLine("Total expenses: ${0}", total);
    }
 
    private static void ListExpenses()
    {
       // read the file and print all the expenses with their data
+
+      Console.WriteLine("Id      Date        Description       Amount");
+      int padMeasure = 0;
+      foreach (var exp in expenses)
+      {
+         var value = exp.Value;
+
+         padMeasure = value.description.Length < 11 ? 16 : 10;
+         Console.Write("{0}".PadRight(8), value.id);
+         Console.Write("{0}".PadRight(10), value.date);
+         Console.Write("{0}".PadRight(padMeasure), value.description);
+         Console.Write("${0}", value.amount);
+         Console.WriteLine("");
+      }
+
    }
 
    private static void AddExpense(string[] args)
@@ -125,17 +198,26 @@ class Program
          {
             if (decimal.TryParse(args[4], out decimal result) && result > 0)
             {
+               var key = expenses.Count + 1;
+               foreach (var exp in expenses)
+               {
+                  if (key == exp.Value.id)
+                  {
+                     key++;
+                  }
+               }
                var expense = new Expense()
                {
-                  id = expenses.Count + 1,
+                  id = key,
                   date = DateOnly.FromDateTime(DateTime.Now),
                   description = args[2],
                   amount = result
                };
 
-               expenses.Add(expenses.Count + 1, expense);
+               expenses.Add(key, expense);
 
                SaveExpensesToFile(expense);
+               Console.WriteLine($"Expense added successfully ID: {key}");
             }
             else
             {
@@ -159,10 +241,40 @@ class Program
 
    private static void LoadExpensesFromFile()
    {
-      // initial method to load the expenses stored in the csv file
-      // if there isn't any file, call CreateEmptyFile()
-      // if there's one, read it and deserealize the data
+      try
+      {
+         using (StreamReader sr = new StreamReader(filePath))
+         {
+            string line = sr.ReadLine() == null ? string.Empty : ""; // skipping the first line
 
+            while ((line = sr.ReadLine()) != null)
+            {
+               if (int.TryParse(line.Substring(0, line.IndexOf(',')), out int id))
+               {
+                  string[] strings = line.Split(',');
+
+                  DateOnly.TryParse(strings[1], out DateOnly date);
+
+                  decimal.TryParse(strings[strings.Length - 1], out decimal amount);
+
+                  expenses.Add(id, new Expense()
+                  {
+                     id = id,
+                     date = date,
+                     description = strings[2].Trim(),
+                     amount = amount
+                  });
+
+               }
+            }
+         }
+
+      }
+      catch (Exception e)
+      {
+         Console.WriteLine("couldn't read the file");
+         Console.WriteLine(e);
+      }
    }
 
    private static void SaveExpensesToFile(Expense expense)
@@ -195,7 +307,6 @@ class Program
 
       if (File.Exists(filePath))
       {
-         Console.WriteLine("The file already exits");
          return;
       }
       else
