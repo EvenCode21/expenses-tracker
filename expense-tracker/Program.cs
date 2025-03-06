@@ -15,6 +15,11 @@ class Program
       if (args.Length == 0 || args.Length > 5)
       {
          Console.WriteLine("Usage: ");
+         Console.WriteLine("Add:  add --description <description> --amount <amount>");
+         Console.WriteLine("list: list");
+         Console.WriteLine("Summary:  Summary");
+         Console.WriteLine("Summary for a specific month: summary --month <monthNumber>");
+         Console.WriteLine("Delete:  delete --id <id>");
          return 1;
       }
 
@@ -23,7 +28,8 @@ class Program
       LoadExpensesFromFile();
 
       // handling input errors and calling the proper meth
-      switch (args[0])
+
+      switch (args[0].ToLower())
       {
          case "add":
             if (args.Length == 5)
